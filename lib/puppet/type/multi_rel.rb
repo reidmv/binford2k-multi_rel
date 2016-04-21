@@ -1,5 +1,3 @@
-require 'pry'
-
 Puppet::Type.newtype(:multi_rel) do
   desc <<-'ENDOFDESC'
   Like an anchor, but simply for defining multiple relationships, the way
@@ -90,7 +88,7 @@ Puppet::Type.newtype(:multi_rel) do
       end
     end
 
-    unless Puppet::Type.type(self[:type]).valid_parameter? self[:match]
+    unless self[:match] == :title or Puppet::Type.type(self[:type]).valid_parameter? self[:match]
        fail Puppet::ParseError, "The #{self[:type]} type does not have a param of '#{self[:match]}'"
     end
   end
@@ -105,11 +103,12 @@ Puppet::Type.newtype(:multi_rel) do
 
     # TODO: this will only work with native types!
     klass = Puppet::Type.type(self[:type])
-    param = self[:match]
+    # param = self[:match]
     reqs  = super
 
     rel_catalog.resources.select{|x| x.class == klass}.each do |res|
-      next unless (res[param] == self[:pattern] or res[param].include? self[:pattern] or res[param] =~ self[:pattern])
+      #next unless (res[param] == self[:pattern] or res[param].include? self[:pattern] or res[param] =~ self[:pattern])
+      next unless match(res, self[:match], self[:pattern])
 
       case self[:relationship]
       when :before
@@ -129,6 +128,19 @@ Puppet::Type.newtype(:multi_rel) do
       end
     end
     reqs
+  end
+
+  # TODO: not sure I like this logic, but I can revisit later
+  def match(res, match, pattern)
+    param = (match == :title) ? res[:name] : res[match]
+    param = Array(param) # coerce to an array, because it simplifies some logic
+
+    case pattern
+    when String
+      return param.include? pattern
+    when Regex
+      return ! (param.grep pattern).empty?
+    end
   end
 
   def refresh
