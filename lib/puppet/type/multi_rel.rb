@@ -1,5 +1,3 @@
-require 'pry'
-
 Puppet::Type.newtype(:multi_rel) do
   desc <<-'ENDOFDESC'
   Like an anchor, but simply for defining multiple relationships, the way
@@ -107,10 +105,8 @@ Puppet::Type.newtype(:multi_rel) do
     param = self[:match]
     reqs  = super
 
-    binding.pry
     rel_catalog.resources.select{|x| x.class == klass}.each do |res|
       next unless (res[param] == self[:pattern] or res[param].include? self[:pattern] or res[param] =~ self[:pattern])
-      binding.pry
 
       case self[:relationship]
       when :before
@@ -129,8 +125,6 @@ Puppet::Type.newtype(:multi_rel) do
 
       end
     end
-    binding.pry
-
     reqs
   end
 
