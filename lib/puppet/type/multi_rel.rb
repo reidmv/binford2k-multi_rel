@@ -1,7 +1,9 @@
+require 'pry'
+
 Puppet::Type.newtype(:multi_rel) do
   desc <<-'ENDOFDESC'
   Like an anchor, but simply for defining multiple relationships, the way
-  we used to use collectors before we realized how dangerous the were.
+  we used to use collectors before we realized how dangerous they were.
 
   For example:
 
@@ -52,17 +54,6 @@ Puppet::Type.newtype(:multi_rel) do
     munge do |value|
       value.to_s.downcase.to_sym
     end
-
-    # TODO: this only works for native types!
-#     validate do |value|
-#       t = Puppet::Type.type(self[:type])
-#
-#       params = t.metaparams + t.parameters + t.properties.collect { |p| p.name }
-#
-#       unless params.include?(value)
-#          fail Puppet::ParseError, "The #{self[:type]} type does not have a param of '#{value}'"
-#       end
-#     end
   end
 
   newparam(:pattern) do
@@ -90,6 +81,18 @@ Puppet::Type.newtype(:multi_rel) do
   # TODO
   newparam(:query) do
     desc 'A hash of matches and patterns to use'
+  end
+
+  validate do
+    [:match, :pattern, :relationship].each do |param|
+      if not self.parameters[param]
+        self.fail "Required parameter missing: #{param}"
+      end
+    end
+
+    unless Puppet::Type.type(self[:type]).valid_parameter? self[:match]
+       fail Puppet::ParseError, "The #{self[:type]} type does not have a param of '#{self[:match]}'"
+    end
   end
 
   # OK, this is where it gets gross. Instead of using the new fancy auto* implicit relationship
